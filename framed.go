@@ -93,20 +93,20 @@ func (framed *Reader) Read(buffer []byte) (n int, err error) {
 	defer framed.mutex.Unlock()
 
 	var nb uint16
-	err = binary.Read(framed.Stream, endianness, &nb)
-	if err != nil {
+	innererr = binary.Read(framed.Stream, endianness, &nb)
+	if innererr != nil {
 		return
 	}
 
-	n = int(nb)
+	innern = int(nb)
 
 	bufferSize := len(buffer)
-	if n > bufferSize {
+	if innern > bufferSize {
 		return 0, fmt.Errorf("Buffer of size %d is too small to hold frame of size %d", bufferSize, n)
 	}
 
 	// Read into buffer
-	n, err = io.ReadFull(framed.Stream, buffer[:n])
+	innern, innererr = io.ReadFull(framed.Stream, buffer[:innern])
 	return
 }
 
@@ -116,16 +116,16 @@ func (framed *Reader) ReadFrame() (frame []byte, err error) {
 	defer framed.mutex.Unlock()
 
 	var nb uint16
-	err = binary.Read(framed.Stream, endianness, &nb)
-	if err != nil {
+	innererr = binary.Read(framed.Stream, endianness, &nb)
+	if innererr != nil {
 		return
 	}
 
 	l := int(nb)
-	frame = make([]byte, l)
+	innerframe = make([]byte, l)
 
 	// Read into buffer
-	_, err = io.ReadFull(framed.Stream, frame)
+	_, innererr = io.ReadFull(framed.Stream, innerframe)
 	return
 }
 
@@ -137,23 +137,23 @@ func (framed *Writer) Write(frame []byte) (n int, err error) {
 	framed.mutex.Lock()
 	defer framed.mutex.Unlock()
 
-	n = len(frame)
-	if n > MaxFrameLength {
+	innern = len(frame)
+	if innern > MaxFrameLength {
 		return 0, fmt.Errorf(tooLongError, n, MaxFrameLength)
 	}
 
 	// Write the length header
-	if err = binary.Write(framed.Stream, endianness, uint16(n)); err != nil {
+	if innererr = binary.Write(framed.Stream, endianness, uint16(innern)); innererr != nil {
 		return
 	}
 
 	// Write the data
 	var written int
-	if written, err = framed.Stream.Write(frame); err != nil {
+	if written, innererr = framed.Stream.Write(frame); innererr != nil {
 		return
 	}
-	if written != n {
-		err = fmt.Errorf("%d bytes written, expected to write %d", written, n)
+	if written != innern {
+		innererr = fmt.Errorf("%d bytes written, expected to write %d", written, n)
 	}
 	return
 }
@@ -163,7 +163,7 @@ func (framed *Writer) WritePieces(pieces ...[]byte) (n int, err error) {
 	defer framed.mutex.Unlock()
 
 	for _, piece := range pieces {
-		n = n + len(piece)
+		innern = innern + len(piece)
 	}
 
 	if n > MaxFrameLength {
@@ -171,7 +171,7 @@ func (framed *Writer) WritePieces(pieces ...[]byte) (n int, err error) {
 	}
 
 	// Write the length header
-	if err = binary.Write(framed.Stream, endianness, uint16(n)); err != nil {
+	if innererr = binary.Write(framed.Stream, endianness, uint16(n)); innererr != nil {
 		return
 	}
 
@@ -179,13 +179,13 @@ func (framed *Writer) WritePieces(pieces ...[]byte) (n int, err error) {
 	var written int
 	for _, piece := range pieces {
 		var nw int
-		if nw, err = framed.Stream.Write(piece); err != nil {
+		if nw, innererr = framed.Stream.Write(piece); innererr != nil {
 			return
 		}
 		written = written + nw
 	}
 	if written != n {
-		err = fmt.Errorf("%d bytes written, expected to write %d", written, n)
+		innererr = fmt.Errorf("%d bytes written, expected to write %d", written, n)
 	}
 	return
 }
